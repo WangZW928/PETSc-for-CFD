@@ -27,13 +27,8 @@ int main(int argc,char **args) {
     lx,ly: lx[i] means the size of i processor in x direction,null means PETSc will decide
     DM_BOUNDARY_NONE: the value on the boundary is known or can be set, PETSC don't need extra memory to store beyond the boundary points
     DMDA_STENCIL_STAR: the stencil type, STAR means 5-point stencil, BOX means 9-point stencil, the points are (i,j), (i-1,j), (i+1,j), (i,j-1), (i,j+1) used compute the value at (i,j)
-    s: the order of points in STENCIL
-    
-    
+    s: the order of points in STENCIL  
     */
-
-
-
 
     // create linear system matrix A
     PetscCall(DMSetFromOptions(da));
@@ -79,6 +74,22 @@ int main(int argc,char **args) {
 //STARTMATRIX
 PetscErrorCode formMatrix(DM da, Mat A) {
     DMDALocalInfo  info;
+
+    /*
+    
+    typedef struct {
+        PetscInt k, j, i, c;
+    } MatStencil;
+
+    The i,j, and k represent the logical coordinates over the entire grid 
+    (for 2 and 1 dimensional problems the k and j entries are ignored). 
+    The c represents the degrees of freedom at each grid point (the dof argument to DMDASetDOF()). 
+    If dof is 1 then this entry is ignored.
+    
+    */
+
+
+
     MatStencil     row, col[5];
     PetscReal      hx, hy, v[5];
     PetscInt       i, j, ncols;
@@ -102,7 +113,7 @@ PetscErrorCode formMatrix(DM da, Mat A) {
                 }
                 if (i+1 < info.mx-1) {
                     col[ncols].j = j;    col[ncols].i = i+1;
-                    v[ncols++] = -hy/hx;
+                    v[ncols++] = -hy/hx; // after done this; ncols = nclos + 1
                 }
                 if (j-1 > 0) {
                     col[ncols].j = j-1;  col[ncols].i = i;
