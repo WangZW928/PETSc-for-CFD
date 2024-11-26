@@ -20,6 +20,13 @@ int main(int argc,char **argv) {
     PetscCall(SNESCreate(PETSC_COMM_WORLD,&snes));//create a nonlinear solver
     PetscCall(SNESSetFunction(snes,r,FormFunction,NULL));//set the function evaluation routine for error calculation
     PetscCall(SNESSetFromOptions(snes));//allow command line options to be passed to the solver and how the Jacobian is calculated
+    /*
+    
+    -snes_fd: use finite difference to calculate the Jacobian
+    -snes_mf: not assembled, but, in a Krylov iterative method for solving system , the action of the Jacobian on vectors (i.e., JF(xk)y) is computed by finite differences
+    -snes_fd_color: computed and assembled by calling FormFunction() substantially fewer than N times to compute F(xk + δv) for special vectors v, by using a graph-coloring algorithm based on the Jacobian sparsity pattern to construct the vectors v
+
+    */
     PetscCall(SNESSolve(snes,NULL,x));// store the solution in x, NULL means no rhs
     PetscCall(VecView(x,PETSC_VIEWER_STDOUT_WORLD));
 
