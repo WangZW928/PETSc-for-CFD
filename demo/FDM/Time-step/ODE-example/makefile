@@ -1,6 +1,8 @@
 
 # 设置 PETSc 相关环境变量
-export PETSC_DIR=/home/wangzewei/PETSc/petsc
+export PETSC_DIR=/home/wangzw/petsc
+export PETSC_ARCH=arch-linux-c-debug
+
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
