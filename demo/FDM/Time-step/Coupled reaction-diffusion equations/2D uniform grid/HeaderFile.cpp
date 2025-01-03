@@ -127,3 +127,30 @@ PetscErrorCode User::STARTTSSETUP(){
 
 }
 
+User :: User(){
+
+    PetscErrorCode ierr;
+    ierr = VecDestroy(&x); if (ierr) PetscError(PETSC_COMM_SELF, __LINE__, "VecDestroy error", __FILE__, ierr, PETSC_ERROR_REPEAT, " ");
+
+    ierr = TSDestroy(&ts); if (ierr) PetscError(PETSC_COMM_SELF, __LINE__, "TSDestroy error", __FILE__, ierr, PETSC_ERROR_REPEAT, " ");
+
+    ierr = DMDestroy(&da); if (ierr) PetscError(PETSC_COMM_SELF, __LINE__, "DMDestroy error", __FILE__, ierr, PETSC_ERROR_REPEAT, " ");
+
+}
+
+PetscErrorCode User::Slove(){
+
+    PetscCall(DMCreateGlobalVector(da,&x));
+    this->InitialState();
+    PetscCall(TSSolve(ts,x));
+
+    if (call_back_report) {
+        PetscCall(TSGetType(ts,&type));
+        PetscCall(PetscPrintf(PETSC_COMM_WORLD,"CALL-BACK REPORT\n  solver type: %s\n",type));
+        PetscCall(PetscPrintf(PETSC_COMM_WORLD,"  IFunction:   %d  | IJacobian:   %d\n",
+                                          (int)user.IFcn_called,(int)user.IJac_called));
+        PetscCall(PetscPrintf(PETSC_COMM_WORLD,"  RHSFunction: %d  | RHSJacobian: %d\n",
+                                          (int)user.RHSFcn_called,(int)user.RHSJac_called));
+    }
+    
+}

@@ -47,11 +47,15 @@ public:
   void PetscOption();
   PetscErrorCode Initilze();
   PetscErrorCode STARTTSSETUP();
-
-
   PetscErrorCode InitialState();
-  PetscErrorCode FormRHSFunctionLocal();
+  PetscErrorCode Slove();
+  PetscErrorCode FormRHSFunctionLocal(Field **);
+  PetscErrorCode FormIFunctionLocal(Field **, Field **);
+
+
+
   PetscErrorCode FormRHSJacobianLocal();
-  PetscErrorCode FormIFunctionLocal();
   PetscErrorCode FormIJacobianLocal();
+
+  User~();
 };
