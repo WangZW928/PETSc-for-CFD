@@ -117,7 +117,7 @@ PetscErrorCode TimeStep::FormRHSFunction(TS ts, PetscReal t, Vec y, Vec g, void 
 
 // Main function
 int main(int argc, char **argv) {
-    PetscCall(PetscInitialize(&argc, &argv, NULL, "ODE system solver example"));
+    PetscCall(PetscInitialize(&argc, &argv, NULL, "Newton’s method solver example"));
 
     TimeStep ts(2);
 
