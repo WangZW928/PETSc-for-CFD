@@ -1,6 +1,46 @@
 #include <Grid.h>
 
-PetscErrorCode Grid::CreateGrid(){
+PetscErrorCode Grid::CreateGrid1D(){
+
+}
+
+PetscErrorCode Grid::CreateGrid2D(){
+
+}
+
+PetscErrorCode Grid::CreateGrid3D(){
+
+    PetscInt size;
+    MPI_Comm_size(PETSC_COMM_WORLD, &size);
+    PetscInt m, n, p;
+    DMDABoundaryType bx=DMDA_BOUNDARY_GHOSTED, 
+                     by=DMDA_BOUNDARY_GHOSTED, 
+                     bz=DMDA_BOUNDARY_GHOSTED;
+    m = n = p = PETSC_DECIDE;
+        
+    if (i_periodic) bx = DMDA_BOUNDARY_PERIODIC;
+    if (j_periodic) by = DMDA_BOUNDARY_PERIODIC;
+    if (k_periodic) bz = DMDA_BOUNDARY_PERIODIC;
+
+    DMDACreate3d(PETSC_COMM_WORLD, bx, by, bz, DMDA_STENCIL_BOX,
+                 d_IM+1, d_JM+1, d_KM+1, m, n,
+                 p, 1, s, PETSC_NULL, PETSC_NULL, PETSC_NULL,
+                 &da_s);
+
+    DMDAGetInfo(da_s, PETSC_NULL, PETSC_NULL, PETSC_NULL, 
+                PETSC_NULL, &m, &n, &p, PETSC_NULL, PETSC_NULL, 
+                PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+    PetscPrintf(PETSC_COMM_WORLD, "**DM 3D Proc Distribution: %i %i %i\n", 
+                                  m, n, p);
+
+    DMDASetUniformCoordinates(da_s, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0);
+
+    DMGetCoordinateDM(da_s, &da_v);
+
+    return 0;
+
+
+
 
 }
 
@@ -108,9 +148,64 @@ PetscErrorCode Grid::ReadGrid3D(char &str){
     MPI_Barrier(PETSC_COMM_WORLD);
     PetscPrintf(PETSC_COMM_WORLD, "Created DM\n");
 
+    DMDALocalInfo info;
+
+    /*
+
+typedef struct {
+  PetscInt        dim, dof, sw;
+  PetscInt        mx, my, mz;     // global number of grid points in each direction 
+  PetscInt        xs, ys, zs;     // starting point of this processor, excluding ghosts 
+  PetscInt        xm, ym, zm;     // number of grid points on this processor, excluding ghosts 
+  PetscInt        gxs, gys, gzs;  // starting point of this processor including ghosts 
+  PetscInt        gxm, gym, gzm;  // number of grid points on this processor including ghosts 
+  DMBoundaryType  bx, by, bz;     // type of ghost nodes at boundary 
+  DMDAStencilType st;
+  DM              da;
+} DMDALocalInfo;
+    
+    */
+
+    DMDAGetLocalInfo(da_s, &info);
+
+    PetscInt xs = info.xs, xe = info.xs + info.xm;
+    PetscInt ys = info.ys, ye = info.ys + info.ym;
+    PetscInt zs = info.zs, ze = info.zs + info.zm;
+
+    Field ***coord;
+    Vec Coord, gCoord;
+    DMGetCoordinatesLocal(da_s, &Coord);
+    DMDAVecGetArray(da_v, Coord, &coord);
 
 
+    for (k=zs; k<ze; k++) {
+        for (j=ys; j<ye; j++) {
+            for (i=xs; i<xe; i++) {
 
+                if(k>=0 && k<Nz_nodes && j>=0 && j<Ny_nodes && i>=0 && i<Nx_nodes){
+                    coord[k][j][i].x = X[i];
+                    coord[k][j][i].y = Y[j];
+                    coord[k][j][i].z = Z[k];
+                }
+
+            }
+        }
+    }
+
+    DMDAVecRestoreArray(da_v, Coord, &coord);
+    DMgetCoordinates(da_s, &gCoord);
+
+    DMLocalToGlobalBegin(da_s, Coord, INSERT_VALUES, gCoord);
+    DMLocalToGlobalEnd(da_s, Coord, INSERT_VALUES, gCoord);
+
+    DMGlobalToLocalBegin(da_s, gCoord, INSERT_VALUES, Coord);
+    DMGlobalToLocalEnd(da_s, gCoord, INSERT_VALUES, Coord);
+
+    fclose(fd);
+
+    MPI_Barrier(PETSC_COMM_WORLD);
+
+    return 0;
 
 }
 
