@@ -76,28 +76,40 @@ class FluidSolver:
 
         self.Re = U0 * L0 / nu
 
-        self.u = np.zeros((grid.nx-1, grid.ny))
+        self.u = np.ones((grid.nx-1, grid.ny)) * self.Uin / self.U0
         self.v = np.zeros((grid.nx, grid.ny-1))
         self.p = np.zeros((grid.nx-1,grid.ny-1))
 
     def apply_velocity_bc(self):
         self.u[0, :] = self.Uin / self.U0
+        #self.u = self.Uin / self.U0
         self.v[0, :] = 0.0
 
         self.u[-1, :] = self.u[-2, :]
         self.v[-1, :] = self.v[-2, :]
-        self.p[-1, :] = self.p[-2, :]
+        
+        
+        
+        #on inlet for pressure
         self.p[0, :] = 0.0  # 左侧设为参考压力（大气压）
 
-
+        
+        #On outlet for Pressure
+        #self.p[-1, :] = self.p[-2, :] 
+        self.p[-1, :] = -1
+        
+        #On y wall for velocity
         self.v[:, 0] = 0.0
         self.v[:, -1] = 0.0
-
-        #self.u[:, 0] = 0
-        #self.u[:, -1] = 0
+        self.u[:, 0] = self.Uin / self.U0
+        self.u[:, -1] = self.Uin / self.U0
         
-        self.u[:, 0] = self.u[:, 1]
-        self.u[:, -1] = self.u[:, -2]
+        #On y wall for Pressure
+        self.p[:, -1] = self.p[:, -2]
+        self.p[:, 0] = self.p[:, 1]
+        
+        #self.u[:, 0] = self.u[:, 1]
+        #self.u[:, -1] = self.u[:, -2]
 
     def solve_momentum(self, dt):
         u_star = self.u.copy()
@@ -282,7 +294,7 @@ def main():
     lx, ly = 1.0, 0.5  # 单位：米
     nx, ny = 128, 64
     U0 = 1  # m/s
-    nu = 5e-3  # 动力粘性系数 (m^2/s)
+    nu = 2e-3  # 动力粘性系数 (m^2/s)
     L0 = lx
     Uin = 1.0
     Re = U0 * L0 / nu
@@ -290,7 +302,7 @@ def main():
 
     # 设置圆柱参数
     cylinder_center = (0.3, 0.25)  # 圆心坐标 (x, y)
-    cylinder_radius = 0.03         # 半径
+    cylinder_radius = 0.05         # 半径
         
 
     grid = StaggeredGrid(1, 0.5, 10, 5)
@@ -311,7 +323,7 @@ def main():
     for iter in range(max_iter):
         solver.apply_velocity_bc()
         solver.solve_momentum(dt)
-        #solver.apply_IBM()  # 🔥 在动量后强制设定障碍物速度
+        solver.apply_IBM()  # 🔥 在动量后强制设定障碍物速度
 
         p_corr = solver.solve_pressure_correction(dt)
         solver.correct_fields(p_corr, dt)
