@@ -99,3 +99,20 @@ $$
 $$
 \frac{v_{i,j+\frac{1}{2}}^{n+1}-v_{i,j+\frac{1}{2}}^{*}}{\Delta t}+\frac{p_{i,j+1}-p_{i,j}}{\Delta y}=0
 $$
+
+## Sec 6. 一些其他需要注意的地方！
+
+1. 边界上的差分如何处理？
+
+   示意图：| (n1) - - (n2) - - (n3)，这是靠近边界内部的三个节点，其中，n1，2，3代表节点，这里的n1就在边界上，先假设其网格节点是均匀的，都是dx，假设靠近壁面的速度可以用如下公式拟合（三个点用三次样条曲线）：
+   $$
+   u = a+by+cy^2 \\
+   u_1 = a \\
+   u_2 = a + b(dx) \\
+   u_3 = a + b(2dx) + c(2dx)^2 \\
+   b = \frac{-3u_1+4u_2-u_3}{2dx} \\
+   c = \frac{u_3 + u_1 - 2u_2}{2dx^2} \\
+   \frac{\partial u}{\partial y} = b+2cy, \frac{\partial u}{\partial y}|_{y=0} = \frac{-3u_1+4u_2-u_3}{2dx}\\
+   \frac{\partial^2 u}{\partial y^2} = 2c, \frac{\partial^2 u}{\partial y^2}|_{y=0} = \frac{u_3 + u_1 - 2u_2}{dx^2} \\
+   $$
+   
