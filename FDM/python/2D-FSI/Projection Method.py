@@ -77,8 +77,38 @@ class FluidSolver:
         self.Re = U0 * L0 / nu
 
         self.u = np.ones((grid.nx-1, grid.ny)) * self.Uin / self.U0
+        self.dudx = np.zeros_like(self.u)
+        self.dudx2 = np.zeros_like(self.u)
+        self.dudy = np.zeros_like(self.u)
+        self.dudy2 = np.zeros_like(self.u)
+        
         self.v = np.zeros((grid.nx, grid.ny-1))
+        self.dvdx = np.zeros_like(self.v)
+        self.dvdx2 = np.zeros_like(self.v)
+        self.dvdy = np.zeros_like(self.v)
+        self.dvdy2 = np.zeros_like(self.v)
+        
         self.p = np.zeros((grid.nx-1,grid.ny-1))
+        self.dpdx = np.zeros_like(self.p)
+        self.dpdx2 = np.zeros_like(self.p)
+        self.dpdy = np.zeros_like(self.p)
+        self.dpdy2 = np.zeros_like(self.p)
+    
+    def get_b(dl,data,where):
+        if where == 'x':
+            b_left = -3 * data[0,:] + 4 * data[1,:] - data[2,:]
+            b_left /= 2*dl
+            
+            b_right = -3 * data[0,:] + 4 * data[1,:] - data[2,:]
+            b_right /= 2*dl
+    
+    def apply_difference_frame(self):
+        dx, dy = self.grid.dx, self.grid.dy
+        
+        #for u difference
+        self.dudx2[1:-2,:] = ( self.u[0:-3,:] +  self.u[2:-1,:] - 2 * self.u[1:-2,:]) / dx**2
+        
+        
 
     def apply_velocity_bc(self):
         self.u[0, :] = self.Uin / self.U0
@@ -202,7 +232,7 @@ class FluidSolver:
         self.cylinder_center = center
         self.cylinder_radius = radius
     
-    def apply_IBM(self):
+    def apply_IBM(self,dt):
         cx, cy = self.cylinder_center
         r = self.cylinder_radius
         dx, dy = self.grid.dx, self.grid.dy
@@ -213,7 +243,10 @@ class FluidSolver:
                 x = self.grid.x_u[i]
                 y = self.grid.y_u[j]
                 if (x - cx)**2 + (y - cy)**2 <= r**2:
-                    self.u[i, j] *= 0.5
+                    # 直接强迫法：强制速度为零
+                    f_u = (0.0 - self.u[i, j]) / dt
+                    self.u[i, j] += dt * f_u  # 等价于 u_star[i,j] = 0.0
+                    #self.u[i, j] *= 0.5
 
     # 修正 v 点
         for i in range(self.v.shape[0]):
@@ -221,7 +254,9 @@ class FluidSolver:
                 x = self.grid.x_v[i]
                 y = self.grid.y_v[j]
                 if (x - cx)**2 + (y - cy)**2 <= r**2:
-                    self.v[i, j] *= 0.5
+                    f_v = (0.0 - self.v[i, j]) / dt
+                    self.v[i, j] += dt * f_v
+                    #self.v[i, j] *= 0.5
 
 
 
@@ -323,11 +358,11 @@ def main():
     for iter in range(max_iter):
         solver.apply_velocity_bc()
         solver.solve_momentum(dt)
-        solver.apply_IBM()  # 🔥 在动量后强制设定障碍物速度
+        solver.apply_IBM(dt)  # 🔥 在动量后强制设定障碍物速度
 
         p_corr = solver.solve_pressure_correction(dt)
         solver.correct_fields(p_corr, dt)
-        #solver.apply_IBM()  # 🔥 在动量后强制设定障碍物速度
+        #solver.apply_IBM(dt)  # 🔥 在动量后强制设定障碍物速度
         
         if iter % 2 == 0:
             solver.plot_live_fields(ax1, ax2, iter, fig)
