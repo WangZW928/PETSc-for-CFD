@@ -112,6 +112,6 @@ $$
    u_3 = a + b(2dx) + c(2dx)^2 \\
    b = \frac{-3u_1+4u_2-u_3}{2dx} \\
    c = \frac{u_3 + u_1 - 2u_2}{2dx^2} \\
-   \frac{\partial u}{\partial y} = b+2cy, \frac{\partial u}{\partial y}|_{y=0} = \frac{-3u_1+4u_2-u_3}{2dx}\\
-   \frac{\partial^2 u}{\partial y^2} = 2c, \frac{\partial^2 u}{\partial y^2}|_{y=0} = \frac{u_3 + u_1 - 2u_2}{dx^2} \\
+   \frac{\partial u}{\partial y} = b+2cy, \frac{\partial u}{\partial y}|_{y=0} =b =  \frac{-3u_1+4u_2-u_3}{2dx}\\
+   \frac{\partial^2 u}{\partial y^2} = 2c, \frac{\partial^2 u}{\partial y^2}|_{y=0} =2c =  \frac{u_3 + u_1 - 2u_2}{dx^2} \\
    $$

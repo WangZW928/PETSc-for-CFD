@@ -77,15 +77,19 @@ class FluidSolver:
         self.Re = U0 * L0 / nu
 
         self.u = np.ones((grid.nx-1, grid.ny)) * self.Uin / self.U0
-        self.dudx = np.zeros_like(self.u)
+        self.dudx_f = np.zeros_like(self.u)#前差
+        self.dudx_b = np.zeros_like(self.u)#后差
         self.dudx2 = np.zeros_like(self.u)
-        self.dudy = np.zeros_like(self.u)
+        self.dudy_f = np.zeros_like(self.u)
+        self.dudy_b = np.zeros_like(self.u)
         self.dudy2 = np.zeros_like(self.u)
         
         self.v = np.zeros((grid.nx, grid.ny-1))
-        self.dvdx = np.zeros_like(self.v)
+        self.dvdx_f = np.zeros_like(self.v)
+        self.dvdx_b = np.zeros_like(self.v)
         self.dvdx2 = np.zeros_like(self.v)
-        self.dvdy = np.zeros_like(self.v)
+        self.dvdy_f = np.zeros_like(self.v)
+        self.dvdy_b = np.zeros_like(self.v)
         self.dvdy2 = np.zeros_like(self.v)
         
         self.p = np.zeros((grid.nx-1,grid.ny-1))
@@ -96,17 +100,96 @@ class FluidSolver:
     
     def get_b(dl,data,where):
         if where == 'x':
-            b_left = -3 * data[0,:] + 4 * data[1,:] - data[2,:]
-            b_left /= 2*dl
+            b_s = -3 * data[0,:] + 4 * data[1,:] - data[2,:]# start at 0 index
+            b_s /= 2*dl
             
-            b_right = -3 * data[0,:] + 4 * data[1,:] - data[2,:]
-            b_right /= 2*dl
+            b_e = -3 * data[-1,:] + 4 * data[-2,:] - data[-3,:]
+            b_e /= 2*dl
+        elif where == 'y':
+            b_s = -3 * data[:,0] + 4 * data[:,1] - data[:,2]
+            b_s /= 2*dl
+            
+            b_e = -3 * data[:,-1] + 4 * data[:,-2] - data[:,-3]
+            b_e /= 2*dl
+            
+        return b_s,b_e
+    
+    def get_2c(dl,data,where):
+        #c实际上求的就是2c，就是二阶导数
+        if where == 'x':
+            c_s = data[0,:] - 2 * data[1,:] + data[2,:]# start at 0 index
+            c_s /= dl**2
+            
+            c_e =  data[-1,:] - 2 * data[-2,:] + data[-3,:]
+            c_e /= dl**2
+        elif where == 'y':
+            c_s = data[:,0] - 2 * data[:,1] + data[:,2]
+            c_s /= dl**2
+            
+            c_e = data[:,-1] - 2 * data[:,-2] + data[:,-3]
+            c_e /= dl**2
+            
+        return c_s,c_e
     
     def apply_difference_frame(self):
         dx, dy = self.grid.dx, self.grid.dy
         
-        #for u difference
+        #for u 2-order difference
+        # ------------- :x
         self.dudx2[1:-2,:] = ( self.u[0:-3,:] +  self.u[2:-1,:] - 2 * self.u[1:-2,:]) / dx**2
+        c_start,c_end = self.get_2c(dx,self.u,'x')
+        self.dudx2[0,:]  = c_start
+        self.dudx2[-1,:]  = c_end
+        # ------------- :y
+        self.dudy2[:,1:-2] = ( self.u[:,0:-3] +  self.u[:,2:-1] - 2 * self.u[:,1:-2]) / dy**2
+        c_start,c_end = self.get_2c(dy,self.u,'y')
+        self.dudy2[:,0]  = c_start
+        self.dudy2[:,-1]  = c_end
+        
+        
+        #for v 2-order difference
+        # ------------- :x
+        self.dvdx2[1:-2,:] = ( self.v[0:-3,:] +  self.v[2:-1,:] - 2 * self.v[1:-2,:]) / dx**2
+        c_start,c_end = self.get_2c(dx,self.v,'x')
+        self.dvdx2[0,:]  = c_start
+        self.dvdx2[-1,:]  = c_end
+        # ------------- :y
+        self.dvdy2[:,1:-2] = ( self.v[:,0:-3] +  self.v[:,2:-1] - 2 * self.v[:,1:-2]) / dy**2
+        c_start,c_end = self.get_2c(dy,self.v,'y')
+        self.dvdy2[:,0]  = c_start
+        self.dvdy2[:,-1]  = c_end
+        
+        #for u 1-order difference 
+        # ------------- :x  
+        # ---- back
+        self.dudx_b[2:-3,:] = ( 3*self.u[2:-3,:] - 4*self.u[1:-2,:] +  self.u[0:-1,:]) / (2*dx)
+        
+        # ---- forward
+        self.dudx_f[1:-2,:] = 
+        
+        # ------------- :y
+        # ---- back
+        self.dudy_b[:,1:-2] = 
+        
+        # ---- forward
+        self.dudy_f[:,1:-2] = 
+        
+        #for v 1-order difference 
+        # ------------- :x
+        # ---- back
+        self.dvdx_b[1:-2,:] = 
+        
+        # ---- forward
+        self.dvdx_f[1:-2,:] = 
+        
+        # ------------- :y
+        # ---- back
+        self.dvdy_b[:,1:-2] = 
+        
+        # ---- forward
+        self.dvdy_f[:,1:-2] =
+        
+        
         
         
 
