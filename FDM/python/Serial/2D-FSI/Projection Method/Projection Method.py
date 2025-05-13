@@ -161,68 +161,121 @@ class FluidSolver:
         
         #for u 1-order difference 
         # ------------- :x  
+        b_start,b_end = self.get_b(dx,self.u,'x')
         # ---- back
-        self.dudx_b[2:-3,:] = ( 3*self.u[2:-3,:] - 4*self.u[1:-2,:] +  self.u[0:-1,:]) / (2*dx)
+        self.dudx_b[2:,:] = ( 3*self.u[2:,:] - 4*self.u[1:-1,:] +  self.u[0:-2,:]) / (2*dx)
+        self.dudx_b[1,:] = (self.u[1,:] - self.u[0,:]) / dx
+        self.dudx_b[0,:] = b_start
         
-        # ---- forward
-        self.dudx_f[1:-2,:] = 
-        
-        # ------------- :y
+        # ---- forward (二阶向前差分 + 一阶差分 + 边界值)
+        self.dudx_f[0:-2,:] = (-3*self.u[0:-2,:] + 4*self.u[1:-1,:] - self.u[2:,:]) / (2*dx)
+        self.dudx_f[-2,:] = (self.u[-1,:] - self.u[-2,:]) / dx
+        self.dudx_f[-1,:] = b_end
+
+        # ------------- :y  
+        b_start, b_end = self.get_b(dy, self.u, 'y')
+
         # ---- back
-        self.dudy_b[:,1:-2] = 
-        
+        self.dudy_b[:,2:] = (3*self.u[:,2:] - 4*self.u[:,1:-1] + self.u[:,0:-2]) / (2*dy)
+        self.dudy_b[:,1] = (self.u[:,1] - self.u[:,0]) / dy
+        self.dudy_b[:,0] = b_start
+
         # ---- forward
-        self.dudy_f[:,1:-2] = 
+        self.dudy_f[:,0:-2] = (-3*self.u[:,0:-2] + 4*self.u[:,1:-1] - self.u[:,2:]) / (2*dy)
+        self.dudy_f[:,-2] = (self.u[:,-1] - self.u[:,-2]) / dy
+        self.dudy_f[:,-1] = b_end
+
+        # for v 1-order difference 
+        # ------------- :x  
+        b_start, b_end = self.get_b(dx, self.v, 'x')
+
+        # ---- back
+        self.dvdx_b[2:,:] = (3*self.v[2:,:] - 4*self.v[1:-1,:] + self.v[0:-2,:]) / (2*dx)
+        self.dvdx_b[1,:] = (self.v[1,:] - self.v[0,:]) / dx
+        self.dvdx_b[0,:] = b_start
+
+        # ---- forward
+        self.dvdx_f[0:-2,:] = (-3*self.v[0:-2,:] + 4*self.v[1:-1,:] - self.v[2:,:]) / (2*dx)
+        self.dvdx_f[-2,:] = (self.v[-1,:] - self.v[-2,:]) / dx
+        self.dvdx_f[-1,:] = b_end
+
+        # ------------- :y  
+        b_start, b_end = self.get_b(dy, self.v, 'y')
+
+        # ---- back
+        self.dvdy_b[:,2:] = (3*self.v[:,2:] - 4*self.v[:,1:-1] + self.v[:,0:-2]) / (2*dy)
+        self.dvdy_b[:,1] = (self.v[:,1] - self.v[:,0]) / dy
+        self.dvdy_b[:,0] = b_start
+
+        # ---- forward
+        self.dvdy_f[:,0:-2] = (-3*self.v[:,0:-2] + 4*self.v[:,1:-1] - self.v[:,2:]) / (2*dy)
+        self.dvdy_f[:,-2] = (self.v[:,-1] - self.v[:,-2]) / dy
+        self.dvdy_f[:,-1] = b_end
         
-        #for v 1-order difference 
+        # ---- for pressure
         # ------------- :x
-        # ---- back
-        self.dvdx_b[1:-2,:] = 
-        
-        # ---- forward
-        self.dvdx_f[1:-2,:] = 
-        
+        self.dpdx[1:-1,:] = (self.p[2:,:] - self.p[0:-2,:]) / (2*dx)
+        b_start,b_end = self.get_b(dx,self.p,'x')
+        self.dpdx[0,:]  = b_start
+        self.dpdx[-1,:]  = b_end
         # ------------- :y
-        # ---- back
-        self.dvdy_b[:,1:-2] = 
+        self.dpdy[:,1:-1] = (self.p[:,2:] - self.p[:,0:-2] ) / (2*dy)
+        b_start,b_end = self.get_y(dy,self.p,'y')
+        self.dpdy[:,0]  = b_start
+        self.dpdy[:,-1]  = b_end
         
-        # ---- forward
-        self.dvdy_f[:,1:-2] =
-        
-        
-        
+        # ------------- :x 2-order difference
+        self.dpdx2[1:-1,:] = (self.p[2:,:] + self.p[0:-2,:] - 2 * self.p[1:-1,:]) / dx**2
+        c_start,c_end = self.get_2c(dx,self.p,'x')
+        self.dpdx2[0,:]  = c_start
+        self.dpdx2[-1,:]  = c_end
+        # ------------- :y 2-order difference
+        self.dpdy2[:,1:-1] = (self.p[:,2:] + self.p[:,0:-2] - 2 * self.p[:,1:-1]) / dy**2
+        c_start,c_end = self.get_2c(dy,self.p,'y')
+        self.dpdy2[:,0]  = c_start
+        self.dpdy2[:,-1]  = c_end
         
 
     def apply_velocity_bc(self):
+        
+        # for inlet
         self.u[0, :] = self.Uin / self.U0
-        #self.u = self.Uin / self.U0
         self.v[0, :] = 0.0
+        self.dpdx[0, :] = 0.0
+        self.p[0, :] = -1 * ( 2*self.grid.dx * self.dpdx[0,:] + self.p[2,:] - 4 * self.p[1,:]) / 3
+        
+        # for outlet
+        # for u
+        self.dudx_b[-1,:] = 0.0
+        self.dudx_f[-1,:] = 0.0
+        dudx = 0.5 * (self.dudx_b[-1,:] + self.dudx_f[-1,:])
+        self.u[-1, :] = -1 * (2*self.grid.dx * dudx + self.u[-3,:] - 4*self.u[-2,:])/3
+        # for v
+        self.dvdy_b[-1,:] = 0.0
+        self.dvdy_f[-1,:] = 0.0
+        dvdy = 0.5 * (self.dvdy_b[-1,:] + self.dvdy_f[-1,:])
+        self.v[-1, :] = -1 * (2*self.grid.dx * dvdy + self.v[-3,:] - 4*self.v[-2,:])/3
+        # for p
+        self.p[-1, :] = 0.0
+        
+        # for bottom wall
+        self.dpdy[:,0] = 0.0
+        self.p[:,0] = -1 * ( 2*self.grid.dy * self.dpdy[:,0] + self.p[:,2] - 4 * self.p[:,1]) / 3
+        self.v[:,0] = 0.0
+        self.dudy_b[:,0] = 0.0
+        self.dudy_f[:,0] = 0.0
+        dudy = 0.5 * (self.dudy_b[:,0] + self.dudy_f[:,0])
+        self.u[:,0] = -1 * (2*self.grid.dy * dudy + self.u[:,2] - 4*self.u[:,1]) / 3
+        
+        # for top wall
+        self.dpdy[:,-1] = 0.0
+        self.p[:,-1] = -1 * ( 2*self.grid.dy * self.dpdy[:,-1] + self.p[:,-3] - 4 * self.p[:,-2]) / 3
+        self.v[:,-1] = 0.0
+        self.dudy_b[:,-1] = 0.0
+        self.dudy_f[:,-1] = 0.0
+        dudy = 0.5 * (self.dudy_b[:,-1] + self.dudy_f[:,-1])
+        self.u[:,-1] = -1 * (2*self.grid.dy * dudy + self.u[:,-3] - 4*self.u[:,-2]) / 3
 
-        self.u[-1, :] = self.u[-2, :]
-        self.v[-1, :] = self.v[-2, :]
-        
-        
-        
-        #on inlet for pressure
-        self.p[0, :] = 0.0  # 左侧设为参考压力（大气压）
-
-        
-        #On outlet for Pressure
-        #self.p[-1, :] = self.p[-2, :] 
-        self.p[-1, :] = -1
-        
-        #On y wall for velocity
-        self.v[:, 0] = 0.0
-        self.v[:, -1] = 0.0
-        self.u[:, 0] = self.Uin / self.U0
-        self.u[:, -1] = self.Uin / self.U0
-        
-        #On y wall for Pressure
-        self.p[:, -1] = self.p[:, -2]
-        self.p[:, 0] = self.p[:, 1]
-        
-        #self.u[:, 0] = self.u[:, 1]
-        #self.u[:, -1] = self.u[:, -2]
 
     def solve_momentum(self, dt):
         u_star = self.u.copy()
@@ -230,11 +283,10 @@ class FluidSolver:
         dx, dy = self.grid.dx, self.grid.dy
         Re = self.Re
         
-
-        i_min = 1
-        j_min = 1
-        i_max = self.grid.nx-1 -1
-        j_max = self.grid.ny-1 -1
+        self.apply_difference_frame()
+        self.apply_velocity_bc()
+        
+        
 
         #u 动量离散
         for i in range(1,self.grid.nx - 1 - 1):
