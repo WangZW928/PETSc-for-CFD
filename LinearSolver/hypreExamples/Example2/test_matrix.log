@@ -1,0 +1,43 @@
+Block(0, 1):
+1 2 
+3 4 
+Block(1, 2):
+0.5 1 
+1.5 2 
+===== Matrix Blocks =====
+Block(0, 0):
+0 0 
+0 0 
+
+Block(0, 1):
+1 2 
+3 4 
+
+Block(1, 0):
+0 0 
+0 0 
+
+Block(1, 1):
+0 0 
+0 0 
+
+Block(1, 2):
+0.5 1 
+1.5 2 
+
+Block(2, 1):
+0 0 
+0 0 
+
+Block(2, 2):
+0 0 
+0 0 
+
+Matrix pattern (6 x 6):
+  **  
+  **  
+    **
+    **
+      
+      
+✅ Matrix written to: block_matrix.txt
